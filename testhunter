@@ -1,0 +1,262 @@
+import sys
+
+# Tron Battle, Mark's starter program
+# Utterly naive algorithm that simply avoids the edge of
+# the playing field as well as other players.
+# Usually survives more than 2 seconds but barely.
+
+# Constants:
+WIDTH = 30
+HEIGHT = 20
+
+# Data structure: store the battlefield as a 2D array of size WIDTH x HEIGHT
+# Set all cells to -1 to mark them as empty
+grid = []
+for i in range(WIDTH):
+   x = []
+   for j in range(HEIGHT):
+       x.append(-1)
+   grid.append(x)
+   
+gridstatus={}
+
+NEIGHBOURS = {}
+for i in range(30):
+    for j in range(20):
+        neighbours = []
+        if i < 29:
+            neighbours.append((i + 1, j))
+        if i > 0:
+            neighbours.append((i - 1, j))
+        if j < 19:
+            neighbours.append((i, j + 1))
+        if j > 0:
+            neighbours.append((i, j - 1))
+        NEIGHBOURS[(i, j)] = neighbours
+        
+def recSpace(direction, counter, x, y):
+    
+    
+        
+    
+        if direction =="LEFT":
+            try:
+                if x <= 1 or grid[x-1][y] != -1:
+                    tempdir="LEFT"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x-1, y)
+            except IndexError:
+                return counter, tempdir
+                
+        elif direction =="RIGHT":
+            try:
+                
+                if x >= 19 or grid[x+1][y] != -1:
+                    tempdir="RIGHT"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x+1, y)
+            except IndexError:
+                return counter, tempdir
+                
+        elif direction =="UP":
+            try:
+                
+                if y <= 1 or grid[x][y-1] != -1:
+                    tempdir="UP"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x, y-1)
+            except IndexError:
+                return counter, tempdir
+                
+        elif direction =="DOWN":
+            try:
+                
+                if y >= 19 or grid[x][y+1] != -1:
+                    tempdir="DOWN"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x, y+1)
+            except IndexError:
+                return counter, tempdir
+                
+    
+        return counter, tempdir
+       
+
+    
+#directions=["up", "left", "down", "right"]
+dirlist=[]
+
+def options():
+    options = []
+            
+    if (my_x+1) < WIDTH and grid[my_x+1][my_y] == -1:
+        options.append("RIGHT")
+    if (my_x-1) >= 0 and grid[my_x-1][my_y] == -1:
+        options.append("LEFT")
+    if (my_y+1) < HEIGHT and grid[my_x][my_y+1] == -1:
+        options.append("DOWN")
+    if (my_y-1) >= 0 and grid[my_x][my_y-1] == -1:
+        options.append("UP")
+        
+    return options
+
+def getNextDir():
+    
+    rowspace=[] #MAx antal steg i varje direction
+    dirlist=[]
+    directions=options()
+    #print("direction: {}".format(directions), file=sys.stderr)
+    for direction in directions:
+        count=0
+        (counter, nameOfDir) =recSpace(direction, count, my_x, my_y)
+        #print("count={} : {}".format(direction, counter), file=sys.stderr)
+        rowspace.append(counter)  
+        dirlist.append(nameOfDir)
+       
+    best=max(rowspace)
+    for x in range(len(rowspace)):
+       if rowspace[x] == best:
+           nextdir=dirlist[x]
+    return nextdir
+
+def hunterPath(cost, m, n):
+    R = 20
+    C = 30
+    total_cost=[]
+    tc = [[0 for x in range(C)] for x in range(R)]
+
+
+    for i in range(1, n+1):
+        for j in range(0, m):
+
+            tc[j][i] = max(tc[j-1][i], tc[j][i-1]) + cost[j][i]
+            total_cost.append(tc[j][i])      
+    return tc
+
+currentDir=""
+gameon=False
+nextdir=None
+hunter=True
+
+
+
+# loop forever
+while True:
+      
+    # n: total number of players (2 to 4).
+    # p: your player number (0 to 3).
+    n, myplayer = [int(i) for i in input().split()]
+    
+    #my_x = -1  # X position of my light cycle
+    #my_y = -1  # Y position of my light cycle
+    
+    # Read in data for where all players are right now:
+    for player in range(n):
+       x0, y0, x1, y1 = [int(j) for j in input().split()]
+       grid[x1][y1] = player
+       grid[x0][y0] = player
+    
+       if player == myplayer:
+           my_x = x1
+           my_y = y1
+       else:
+           ai_x = x1
+           ai_y = y1
+
+    def runner(): 
+        printed=False
+        nextavailable=options()  
+        nextdir=getNextDir()
+        gameon=True#posTuple = (x1, y1)
+        return nextdir
+        #printed=True
+        if nextdir not in nextavailable:
+            
+            #print("old-dir: {}".format(nextdir), file=sys.stderr)
+            nextdir=getNextDir()
+            if not printed:
+                return nextdir
+                printed=True
+                #print("new-dir: {}".format(nextdir), file=sys.stderr)#print(nextdir)   
+        
+        print("Normal choice dir: {}".format(nextdir), file=sys.stderr)
+        if not printed:
+            return nextdir       
+
+    #print("nextavailable: {}".format(nextavailable), file=sys.stderr)
+    #print("Gamestatus: {}".format(gameon), file=sys.stderr)
+    if gameon == False:
+        pass
+    
+    if my_y < ai_y+3 and my_x < ai_x+3:
+        hunter=False
+    elif my_y < ai_y-3 and my_x < ai_x-3:
+        hunter=False
+        
+    if hunter==True:
+       nextavailable=options()     
+       if my_x < ai_x and "RIGHT" in nextavailable:
+           print("RIGHT")
+           
+       elif my_x > ai_x and "LEFT" in nextavailable:
+           print("LEFT")
+       elif my_y < ai_y and "DOWN" in nextavailable:
+           print("DOWN")
+       elif my_y > ai_y and "UP" in nextavailable:
+           print("UP")
+       else:
+           print(nextavailable[0])
+
+    else:
+         nextdir=runner()
+         print(nextdir)
+"""    
+        nextdir=getNextDir()
+        gameon=True#posTuple = (x1, y1)
+        print(nextdir)
+        printed=True
+    if nextdir not in nextavailable:
+        
+        #print("old-dir: {}".format(nextdir), file=sys.stderr)
+        nextdir=getNextDir()
+        if not printed:
+            print(nextdir)
+            printed=True
+            #print("new-dir: {}".format(nextdir), file=sys.stderr)#print(nextdir)
+    
+              
+    
+    
+    print("Normal choice dir: {}".format(nextdir), file=sys.stderr)
+    if not printed:
+        print(nextdir, file=sys.stdout)
+"""
+
+   
+# Write out some debugging output to help us see what is going on:
+#for x in range (19):
+   #for y in range(29):
+       #print("grid={}".format(grid[x]), file=sys.stderr)
+       
+        
+
+"""
+if (my_x + 1) < WIDTH and grid[my_x + 1][my_y] == -1:
+   print("RIGHT")
+elif (my_x - 1) >= 0 and grid[my_x - 1][my_y] == -1:
+   print("LEFT")
+elif (my_y + 1) < HEIGHT and grid[my_x][my_y + 1] == -1:
+   print("DOWN")
+elif (my_y - 1) >= 0 and grid[my_x][my_y - 1] == -1:
+   print("UP")
+else:
+   print("SELF DESCTRUCT")
+"""
