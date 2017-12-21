@@ -1,0 +1,424 @@
+import sys
+
+# Tron Battle, Mark's starter program
+# Utterly naive algorithm that simply avoids the edge of
+# the playing field as well as other players.
+# Usually survives more than 2 seconds but barely.
+
+# Constants:
+WIDTH = 30
+HEIGHT = 20
+
+# Data structure: store the battlefield as a 2D array of size WIDTH x HEIGHT
+# Set all cells to -1 to mark them as empty
+grid = []
+for i in range(HEIGHT):
+   x = []
+   for j in range(WIDTH):
+       x.append(0)
+   grid.append(x)
+   
+gridstatus={}
+
+        
+def recSpace(direction, counter, x, y):
+    
+        if direction =="LEFT":
+            try:
+                if x <= 1 or grid[x-1][y] != 0:
+                    tempdir="LEFT"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x-1, y)
+            except IndexError:
+                return counter, tempdir
+                
+        elif direction =="RIGHT":
+            try:
+                
+                if x >= 19 or grid[x+1][y] != 0:
+                    tempdir="RIGHT"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x+1, y)
+            except IndexError:
+                return counter, tempdir
+                
+        elif direction =="UP":
+            try:
+                
+                if y <= 1 or grid[x][y-1] != 0:
+                    tempdir="UP"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x, y-1)
+            except IndexError:
+                return counter, tempdir
+                
+        elif direction =="DOWN":
+            try:
+                
+                if y >= 19 or grid[x][y+1] != 0:
+                    tempdir="DOWN"
+                    return (counter, tempdir)
+                else:
+                    counter+=1
+                    return recSpace(direction, counter, x, y+1)
+            except IndexError:
+                return counter, tempdir
+                
+    
+        return counter, tempdir
+    
+#directions=["up", "left", "down", "right"]
+dirlist=[]
+
+def options():
+    options = []
+            
+    if (my_x+1) < WIDTH and grid[my_x+1][my_y] == 0:
+        options.append("RIGHT")
+    if (my_x-1) >= 0 and grid[my_x-1][my_y] == 0:
+        options.append("LEFT")
+    if (my_y+1) < HEIGHT and grid[my_x][my_y+1] == 0:
+        options.append("DOWN")
+    if (my_y-1) >= 0 and grid[my_x][my_y-1] == 0:
+        options.append("UP")
+        
+    return options
+
+def getNextDir():
+    
+    rowspace=[] #MAx antal steg i varje direction
+    dirlist=[]
+    directions=options()
+    #print("direction: {}".format(directions), file=sys.stderr)
+    for direction in directions:
+        count=0
+        (counter, nameOfDir) =recSpace(direction, count, my_x, my_y)
+        #print("count={} : {}".format(direction, counter), file=sys.stderr)
+        rowspace.append(counter)  
+        dirlist.append(nameOfDir)
+       
+    best=max(rowspace)
+    for x in range(len(rowspace)):
+       if rowspace[x] == best:
+           nextdir=dirlist[x]
+    return nextdir
+
+def hunterPath(cost, m, n):
+    #print("Gamestatus: {}, {}".format(m,n), file=sys.stderr)
+    R = 50
+    C = 50
+    total_cost=[]
+    tc = [[0 for x in range(C)] for x in range(R)]
+
+
+    for col in range(1, 19):
+        for row in range(1, 27):
+            if cost[row][col] == "O":
+                cost[row][col] = -1000
+            if row <1:
+                UP=-10000
+            else:
+                UP=tc[row-1][col]
+             
+            LEFT=tc[row][col-1]
+
+            tc[row][col] = max(UP, LEFT) + cost[row][col] * 10 -4
+            total_cost.append(tc[row][col])        
+    
+    
+    pathlist=[]
+    debuglist=[]
+    debubstorage=[]
+    pathstorage=[]
+    #Start traverse bottom-up
+    #for i in range(0,19):
+    cols=m
+    rows=n
+    
+    while cols==n:
+        if rows >=17:
+            nextMin=max(tc[rows-1][cols], tc[rows][cols-1])
+        elif rows <=0:
+            nextMin=max(tc[rows][cols-1], tc[rows+1][cols])
+
+        else:
+
+            nextMin=max(tc[rows-1][cols], tc[rows][cols-1], tc[rows+1][cols])
+        
+            if  nextMin == tc[rows+1][cols]:
+                
+                return "DOWN"
+                #pathlist.append("DOWN")
+                #debuglist.append([rows+1, cols-1])
+                rows +=1
+        
+            elif nextMin == tc[rows][cols-1]:
+                return "LEFT"
+                #pathlist.append("LEFT")
+                #debuglist.append([rows, cols-1])
+                rows = rows
+            elif nextMin == tc[rows-1][cols]:
+                return "UP"
+                #pathlist.append("UP")
+                #debuglist.append([rows-1, cols-1])
+                rows -= 1
+        #print(nextMin, rows,cols)
+        cols-= 1
+        
+        #Gathers each rows path and appends to pathlist
+        #pathstorage.append(pathlist)  
+        
+        #print("Gamestatus: {}".format(pathlist), file=sys.stderr)
+        
+
+
+#    print("Gamestatus: {}".format(pathlist), file=sys.stderr)    
+    #return pathlist
+def minCost(cost, m, n):
+    R = 40
+    C = 40
+    total_cost=[]
+    tc = [[0 for x in range(C)] for x in range(R)]
+
+
+    for col in range(1, n+1):
+        for row in range(0, m+1):
+            print("row col: {}{}".format(row, col), file=sys.stderr)
+            if cost[row][col] == "O":
+                cost[row][col] = -1000
+            if row <1:
+                UP=-10000
+            else:
+                UP=tc[row-1][col]
+             
+            LEFT=tc[row][col-1]
+
+            tc[row][col] = max(UP, LEFT) + cost[row][col] +100
+            total_cost.append(tc[row][col])      
+    return tc
+    
+
+#    print("rad:{}, costnad: {}".format(x, minCost(cost, 3, x)))
+
+#Backtrack example LCS
+def backtrack(tc, rows, cols, grid):
+    pathlist=[]
+    debuglist=[]
+    debubstorage=[]
+    pathstorage=[]
+    rows=4
+    newdir=""
+
+    #Start traverse bottom-up
+    #for i in range(4,5):
+    #    rows = i
+
+    #if direction == "LEFT":
+    while cols >0:
+        print("row col: {}{}".format(rows, cols), file=sys.stderr)
+        if grid[rows][cols] == 2:
+            break 
+        if rows >=3:
+            nextMin=max(tc[rows-1][cols], tc[rows][cols-1])
+        elif rows <=0:
+            nextMin=max(tc[rows][cols-1], tc[rows+1][cols])
+        elif cols <= 0:
+            nextMin=max(tc[rows+1][cols], tc[rows][cols+1])
+        else:
+            nextMin=max(tc[rows-1][cols], tc[rows][cols-1], tc[rows+1][cols],tc[rows][cols+1])
+                
+        if  nextMin == tc[rows+1][cols]:         
+            newdir = "DOWN"
+            pathlist.append("DOWN")
+            
+            #debuglist.append([rows+1, cols-1])
+            rows +=1
+            tc[rows-1][cols] = 0
+        elif nextMin == tc[rows][cols-1]:
+            newdir = "LEFT"
+            pathlist.append("LEFT")
+            #debuglist.append([rows, cols-1])
+            cols -=1
+            tc[rows][cols+1] = 0
+        elif nextMin == tc[rows][cols+1]:
+            newdir = "RIGHT"
+            pathlist.append("RIGHT")
+            #debuglist.append([rows, cols-1])
+            cols +=1
+            tc[rows][cols-1] = 0
+        elif nextMin == tc[rows-1][cols]:
+            #print(nextMin, rows, cols)
+            newdir = "UP"
+            pathlist.append("UP")
+            rows -= 1
+            tc[rows+1][cols] = 0
+         
+       
+            
+    return pathlist
+
+def backtrack2(tc, rows, cols, grid):
+    pathlist=[]
+    debuglist=[]
+    debubstorage=[]
+    pathstorage=[]
+    rows=rows
+    newdir=""
+
+    #Start traverse bottom-up
+    #for i in range(4,5):
+    #    rows = i
+
+    #if direction == "LEFT":
+    while cols <10:
+        if grid[rows][cols] == 2:
+            break 
+        if rows >=19:
+            nextMin=max(tc[rows-1][cols], tc[rows][cols-1])
+        elif rows <=0:
+            nextMin=max(tc[rows][cols-1], tc[rows+1][cols])
+        elif cols <= 0:
+            nextMin=max(tc[rows+1][cols], tc[rows][cols+1])
+        else:
+            nextMin=max(tc[rows-1][cols], tc[rows][cols-1], tc[rows+1][cols],tc[rows][cols+1])
+                
+        if  nextMin == tc[rows+1][cols]:         
+            newdir = "DOWN"
+            pathlist.append("DOWN")
+            
+            #debuglist.append([rows+1, cols-1])
+            rows +=1
+            tc[rows-1][cols] = 0
+        elif nextMin == tc[rows][cols-1]:
+            newdir = "LEFT"
+            pathlist.append("LEFT")
+            #debuglist.append([rows, cols-1])
+            cols -=1
+            tc[rows][cols+1] = 0
+        elif nextMin == tc[rows][cols+1]:
+            newdir = "RIGHT"
+            pathlist.append("RIGHT")
+            #debuglist.append([rows, cols-1])
+            cols +=1
+            tc[rows][cols-1] = 0
+        elif nextMin == tc[rows-1][cols]:
+            #print(nextMin, rows, cols)
+            newdir = "UP"
+            pathlist.append("UP")
+            rows -= 1
+            tc[rows+1][cols] = 0
+         
+        
+            
+    return pathlist
+currentDir=""
+gameon=False
+nextdir=None
+hunterpath=[]
+hunter=True
+huntercount=20
+# loop forever
+while True:
+      
+    # n: total number of players (2 to 4).
+    # p: your player number (0 to 3).
+    n, myplayer = [int(i) for i in input().split()]
+    #print("Gamestatus: {}, {}".format(n, myplayer), file=sys.stderr)
+    #my_x = -1  # X position of my light cycle
+    #my_y = -1  # Y position of my light cycle
+    
+    # Read in data for where all players are right now:
+    for player in range(n):
+       x0, y0, x1, y1 = [int(j) for j in input().split()]
+       
+       if player == myplayer:
+           my_x = x1
+           my_y = y1
+           grid[x1][y1] = "O"
+           grid[x0][y0] = "O"
+       else:
+           grid[x1][y1] = 2
+           grid[x0][y0] = "O"
+           en_y = y1
+           en_x = x1
+       
+           
+    printed=False
+    nextavailable=options()  
+    #print("nextavailable: {}".format(nextavailable), file=sys.stderr)
+    #print("Gamestatus: {}".format(gameon), file=sys.stderr)
+    huntercount-=1
+    
+    if huntercount <=0:
+        gameon=True
+    if gameon == False:
+        if hunter==True:
+            
+            tc=minCost(grid, my_y, my_x)
+            if my_x < en_x:
+                path=backtrack2(tc, my_y, my_x, grid)
+                #print("Vänster: {}".format(gameon), file=sys.stderr)
+                print(path[0])
+                
+            elif my_x > en_x:
+                path=backtrack(tc, my_y, my_x, grid)
+                print(path[0])
+            #if hunterpath not in nextavailable:
+            #    print(nextavailable[0])
+                
+            #    huntercount -=1
+            #else:    
+            #    print(hunterpath)
+            #    printed=True
+    
+    #nextdir=getNextDir()
+        #posTuple = (x1, y1)
+            
+    
+"""
+        
+        
+        #gameon=True
+    if nextdir not in nextavailable:
+        
+        #print("old-dir: {}".format(nextdir), file=sys.stderr)
+        nextdir=getNextDir()
+        if not printed:
+            print(nextdir)
+            printed=True
+            #print("new-dir: {}".format(nextdir), file=sys.stderr)#print(nextdir)
+    
+              
+    
+    
+    #print("Normal choice dir: {}".format(nextdir), file=sys.stderr)
+    if not printed:
+        print(nextdir, file=sys.stdout)
+
+"""
+   
+# Write out some debugging output to help us see what is going on:
+#for x in range (19):
+   #for y in range(29):
+       #print("grid={}".format(grid[x]), file=sys.stderr)
+       
+        
+
+"""
+if (my_x + 1) < WIDTH and grid[my_x + 1][my_y] == -1:
+   print("RIGHT")
+elif (my_x - 1) >= 0 and grid[my_x - 1][my_y] == -1:
+   print("LEFT")
+elif (my_y + 1) < HEIGHT and grid[my_x][my_y + 1] == -1:
+   print("DOWN")
+elif (my_y - 1) >= 0 and grid[my_x][my_y - 1] == -1:
+   print("UP")
+else:
+   print("SELF DESCTRUCT")
+"""
