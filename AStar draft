@@ -1,0 +1,200 @@
+import sys
+import collections
+import heapq
+# Tron Battle, Mark's starter program
+# Utterly naive algorithm that simply avoids the edge of
+# the playing field as well as other players.
+# Usually survives more than 2 seconds but barely.
+class SquareGrid:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.walls = []
+    
+    def in_bounds(self, id):
+        (x, y) = id
+        return 0 <= x < self.width and 0 <= y < self.height
+    
+    def passable(self, id):
+        return id not in self.walls
+    
+    def neighbors(self, id):
+        (x, y) = id
+        results = [(x+1, y), (x, y-1), (x-1, y), (x, y+1)]
+        if (x + y) % 2 == 0: results.reverse() # aesthetics
+        results = filter(self.in_bounds, results)
+        results = filter(self.passable, results)
+        return results
+
+class Queue:
+    def __init__(self):
+        self.elements = collections.deque()
+    
+    def empty(self):
+        return len(self.elements) == 0
+    
+    def put(self, x):
+        self.elements.append(x)
+    
+    def get(self):
+        return self.elements.popleft()
+        
+def heuristic(a, b):
+    (x1, y1) = a
+    (x2, y2) = b
+    return abs(x1 - x2) + abs(y1 - y2)
+
+class GridWithWeights(SquareGrid):
+    def __init__(self, width, height):
+        super().__init__(width, height)
+        self.weights = {}
+    
+    def cost(self, from_node, to_node):
+        return self.weights.get(to_node, 1)
+
+class PriorityQueue:
+    def __init__(self):
+        self.elements = []
+    
+    def empty(self):
+        return len(self.elements) == 0
+    
+    def put(self, item, priority):
+        heapq.heappush(self.elements, (priority, item))
+    
+    def get(self):
+        return heapq.heappop(self.elements)[1]
+        
+def reconstruct_path(came_from, start, goal):
+    current = goal
+    path = []
+    while current != start:
+        path.append(current)
+        current = came_from[current]
+    path.append(start) # optional
+    path.reverse() # optional
+    return path
+
+def a_star_search(graph, start, goal):
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from = {}
+    cost_so_far = {}
+    came_from[start] = None
+    cost_so_far[start] = 0
+    
+    while not frontier.empty():
+        current = frontier.get()
+        
+        if current == goal:
+            break
+        
+        for next in graph.neighbors(current):
+            new_cost = cost_so_far[current] + graph.cost(current, next)
+
+            if next not in cost_so_far or new_cost < cost_so_far[next]:
+                cost_so_far[next] = new_cost
+                priority = new_cost + heuristic(goal, next)
+                frontier.put(next, priority)
+                came_from[next] = current
+    
+    return came_from, cost_so_far
+
+# Constants:
+WIDTH = 30
+HEIGHT = 20
+
+# Data structure: store the battlefield as a 2D array of size WIDTH x HEIGHT
+# Set all cells to -1 to mark them as empty
+grid = []
+for i in range(WIDTH):
+   x = []
+   for j in range(HEIGHT):
+       x.append(".")
+   grid.append(x)
+   
+#Create 
+gamegrid = GridWithWeights(30,20)
+
+current=""
+# loop forever
+while True:
+   # n: total number of players (2 to 4).
+   # p: your player number (0 to 3).
+   n, p = [int(i) for i in input().split()]
+
+   #my_x = -1  # X position of my light cycle
+   #my_y = -1  # Y position of my light cycle
+
+   # Read in data for where all players are right now:
+   for i in range(n):
+       x0, y0, x1, y1 = [int(j) for j in input().split()]
+       grid[x1][y1] = i
+       gamegrid.walls.append((x0,y0))
+       gamegrid.walls.append((x1,y1)) 
+       if i == p:
+           my_x = x1
+           my_y = y1
+       else:
+           en_y = y1
+           en_x = x1
+           
+   #print("grid={} {} {} {}".format(my_y, my_x, en_y, en_x), file=sys.stderr)
+   
+   #enpos=(en_x,en_y)
+   #mypos=(my_y,my_x)
+   #gamegrid.walls.append(enpos)  
+   #gamegrid.walls.append(mypos)
+   came_from, cost_so_far = a_star_search(gamegrid, (my_x, my_y), (en_x-1, en_y))
+   path=reconstruct_path(came_from, start=(my_x, my_y), goal=(en_x-1, en_y))
+   firstdir=path[1]
+   
+   nx=firstdir[0]
+   ny=firstdir[1]
+   print("grid={}, {} {} POS: {} {}".format(path[1], ny, nx, my_y, my_x), file=sys.stderr)
+   print("next pos {}".format(path[2]), file=sys.stderr)
+   if ny < my_y:# and nx == my_x:
+       if current == "DOWN":
+           current="LEFT"
+           print("LEFT")
+           
+       else:
+            
+           current="UP"
+           print("UP")
+   elif ny > my_y:# and nx == my_x:
+       if current =="UP":
+           current="LEFT"
+           print("LEFT")
+       else:       
+           current="DOWN"
+           print("DOWN")
+   elif nx < my_x:# and ny == my_y:
+       if current =="RIGHT":
+           current="DOWN"
+           print("DOWN")
+       else:
+           
+           current="LEFT"
+           print("LEFT")
+   elif nx > my_x:# and ny == my_y:
+       if current == "LEFT":
+           current="RIGHT"
+           print("RIGHT")
+       else:
+           current="RIGHT"
+           print("RIGHT")
+   # Write out some debugging output to help us see what is going on:
+   
+"""
+   if (my_x + 1) < WIDTH and grid[my_x + 1][my_y] == -1:
+       print("RIGHT")
+   elif (my_x - 1) >= 0 and grid[my_x - 1][my_y] == -1:
+       print("LEFT")
+   elif (my_y + 1) < HEIGHT and grid[my_x][my_y + 1] == -1:
+       print("DOWN")
+   elif (my_y - 1) >= 0 and grid[my_x][my_y - 1] == -1:
+       print("UP")
+   else:
+       print("SELF DESCTRUCT")
+"""
